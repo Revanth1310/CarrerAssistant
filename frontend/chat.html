@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Job Assistant</title>
+  <style>
+    
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; background-color: #0d0d0d; color: #e0e0e0; }
+
+    .container { display: flex; height: 100vh; width: 100vw; }
+
+    /* Left Window */
+    .left-window { flex: 1; background: #111; border-right: 1px solid #222; padding: 20px; display: flex; flex-direction: column; }
+    .left-window h2 { color: #00ffff; margin-bottom: 20px; }
+
+    /* Middle Window (Chat) */
+    .middle-window { flex: 2; display: flex; color: #00ffff; flex-direction: column; border-right: 1px solid #222; padding: 20px; background: #0f0f0f; }
+    #chatWindow { flex: 1; overflow-y: auto; padding: 15px; border: 1px solid #222; border-radius: 10px; background: #111; margin-bottom: 10px; }
+    .message { margin-bottom: 12px; display: flex; flex-direction: column; }
+    .message.user { align-items: flex-end; }
+    .message.user span { background: #00ffff; color: #000; padding: 8px 12px; border-radius: 15px 15px 0 15px; max-width: 80%; word-wrap: break-word; }
+    .message.bot { align-items: flex-start; }
+    .message.bot span { background: #222; color: #00ffff; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; word-wrap: break-word; }
+
+    .input-container { display: flex; position: relative; margin-top: 10px; }
+    .input-container input { flex: 1; padding: 12px 50px 12px 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #00ffff; outline: none; }
+    .arrow-btn { position: absolute; right: 5px; top: 28%; transform: translateY(-50%); background: #00ffff; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px; color: #000; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+    .arrow-btn:hover { background: #00bfff; transform: translateY(-50%) scale(1.1); }
+
+    /* Right Window */
+    .right-window { flex: 1; background: #111; padding: 20px; display: flex; flex-direction: column; }
+    .right-window h2 { color: #00ffff; margin-bottom: 15px; }
+    #uploadResult { margin-top: 10px; font-size: 14px; color: #0ff; }
+
+    
+    
+
+    /* Media Query: Mobile */
+    @media screen and (max-width: 768px) {
+      .container { flex-direction: column; }
+      .left-window, .right-window { display: none; position: fixed; top: 0; height: 100%; width: 80%; background-color: #111; z-index: 999; overflow-y: auto; transition: transform 0.3s ease; }
+      .middle-window { width: 100%; margin: 0; }
+      
+      .left-window.active { display: block; left: 0; }
+      .right-window.active { display: block; right: 0; z-index: 1500; }
+    }
+    
+    
+
+button{
+    margin-top: 10px;
+    background: linear-gradient(90deg, #00ffff, #0077ff);
+    border: none;
+    padding: 10px;
+    border-radius: 10px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+#uploadBtn:hover {  
+    background: linear-gradient(90deg, #00bfff, #00ffff);
+}
+
+    #loggoutSection {
+      
+      color: #00ffff;
+    }
+    .login-btn {
+    display: inline-block;
+    margin-top: 10px;
+    background: linear-gradient(90deg, #00ffff, #0077ff);
+    border: none;
+    padding: 8px 15px;
+    border-radius: 10px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-decoration: none;
+    text-align: center;
+}
+
+.login-btn:hover {
+    background: linear-gradient(90deg, #00bfff, #00ffff);
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- MIDDLE WINDOW (Chat) -->
+    <div class="middle-window">
+      <h2>Ask the Agent</h2>
+      <div id="chatWindow"></div>
+      <div class="input-container">
+        <input id="prompt" type="text" placeholder="Type your question..." />
+        <button id="askBtn" class="arrow-btn">&#10148;</button>
+      </div>
+    </div>
+
+    <!-- RIGHT WINDOW (Upload) -->
+    <div class="right-window">
+      
+      <h2>Update Resume</h2>
+      <input type="file" id="resumeFile" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg">
+      <button id="uploadBtn">Update</button>
+      <div id="uploadResult"></div>
+      <div id="loggoutSection">
+      <p>LOGGINED AS<b id="user"></b></p>
+      <button id="logoutBtn">LOGOUT</button>
+    </div>
+    <div id="LoginSection">
+      <a href="main.html" class="login-btn">Login</a>
+    </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <script>
+    let username = localStorage.getItem("username");
+    
+    const API_BASE = "http://127.0.0.1:8000/user";
+    const chatWindow = document.getElementById('chatWindow');
+    const promptInput = document.getElementById('prompt');
+    const uploadFileInput = document.getElementById('resumeFile');
+    const uploadResult = document.getElementById('uploadResult');
+    
+    const leftWindow = document.querySelector('.left-window');
+    const rightWindow = document.querySelector('.right-window');
+    const userDisplay = document.getElementById('user');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginSection = document.getElementById('LoginSection');
+    const loggoutSection = document.getElementById('loggoutSection');
+
+    if (username) {
+      userDisplay.textContent = ` ${username}`;
+      loggoutSection.style.display = 'block';
+      loginSection.style.display = 'none';
+    } else {
+      loggoutSection.style.display = 'none';
+      loginSection.style.display = 'block';
+    }
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem("username");
+      alert("Logged out successfully.");
+      window.location.href = "main.html";
+    });
+
+    // --- helper: appendMessage ---
+    function appendMessage(text, role = 'bot') {
+      const div = document.createElement('div');
+      div.className = 'message ' + (role === 'user' ? 'user' : 'bot');
+      const span = document.createElement('span');
+      if (role === 'bot') {
+        try {
+          span.innerHTML = marked.parse(String(text ?? ''));
+        } catch (err) {
+          span.textContent = String(text ?? '');
+        }
+      } else {
+        span.textContent = String(text ?? '');
+      }
+      div.appendChild(span);
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    
+    // --- Upload Resume ---
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      const file = uploadFileInput.files[0];
+      if (!file) return alert("Please select a file.");
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+        const data = await res.json();
+        uploadResult.textContent = res.ok ? `Upload successful! Resume ID: ${data.resume_id}` : `Upload failed: ${data.detail}`;
+      } catch (err) { console.error(err); uploadResult.textContent = "Upload failed. Check console."; }
+    });
+
+    // --- Ask Agent ---
+    document.getElementById('askBtn').addEventListener('click', async () => {
+      const query = promptInput.value.trim();
+      if (!query) return alert("Please enter a question.");
+      appendMessage(query, 'user');
+
+      const formData = new FormData();
+      formData.append("query", query);
+      formData.append("username", username);
+
+      try {
+        const response = await fetch(`${API_BASE}/chat`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await response.json();
+
+        if (response.ok && data.response) {
+          appendMessage(data.response, 'bot');
+        } else {
+          appendMessage(data.error || data.detail || 'No response from server', 'bot');
+       }
+      } catch (err) {
+        console.error(err);
+        appendMessage('Request failed. See console for details.', 'bot');
+      }
+
+      promptInput.value = '';
+    });
+  </script>
+
+</body>
+</html>

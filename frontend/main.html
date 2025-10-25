@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Career Portal</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #0d0d0d;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at top, #121212, #000000);
+    }
+
+    .container {
+      background: rgba(20, 20, 20, 0.9);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      width: 380px;
+      text-align: center;
+      transition: all 0.4s ease;
+    }
+
+    h2 {
+      color: #00ffff;
+      text-shadow: 0 0 10px #00ffff;
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 10px;
+      color: #00ffff;
+      outline: none;
+    }
+
+    input[type="file"] {
+      border: none;
+      background: transparent;
+      color: #00ffff;
+    }
+
+    button {
+      background: linear-gradient(90deg, #00ffff, #0077ff);
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #00bfff, #00ffff);
+      transform: scale(1.05);
+    }
+
+    p {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    a {
+      color: #00ffff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <h2>Login</h2>
+      <input type="text" id="loginUsername" placeholder="Username" required />
+      <input type="password" id="loginPassword" placeholder="Password" required />
+      <button onclick="login()">Login</button>
+      <p>Don't have an account? <a onclick="toggleForm('signup')">Sign up here</a></p>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signupForm" class="hidden">
+      <h2>Sign Up</h2>
+      <input type="text" id="signupUsername" placeholder="Username" required />
+      <input type="password" id="signupPassword" placeholder="Password" required />
+      <input type="number" id="age" placeholder="Age" required />
+      <input type="text" id="currentStudy" placeholder="Current Study" />
+      <input type="text" id="goal" placeholder="Career Goal" />
+      <textarea id="skills" placeholder="Skills (comma separated)"></textarea>
+      <label>Upload Document:</label>
+      <input type="file" id="documentFile" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" />
+      <button onclick="signup()">Sign Up</button>
+      <p>Already have an account? <a onclick="toggleForm('login')">Login here</a></p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/user";
+
+    function toggleForm(type) {
+      document.getElementById('loginForm').classList.toggle('hidden', type !== 'login');
+      document.getElementById('signupForm').classList.toggle('hidden', type !== 'signup');
+    }
+
+    async function login() {
+        const username = document.getElementById("loginUsername").value;
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+          const formData = new FormData();
+          formData.append("username", username);
+          formData.append("password", password);
+
+          const res = await fetch(`${API_BASE}/login`, {
+            method: "POST",
+            body: formData
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            alert("Login successful! Welcome "+ data.user +" Redirecting to chat...");
+            localStorage.setItem("username", data.user);
+            // Redirect to chat section
+            window.location.href = "chat.html";  
+          } else {
+            alert(data.detail || "Login failed");
+          }
+          
+
+        } catch (err) {
+          console.error("Login failed:", err);
+          alert("Login failed. Check console for details.");
+        }
+      }
+
+
+    async function signup() {
+      const username = document.getElementById("signupUsername").value;
+      const password = document.getElementById("signupPassword").value;
+      const age = document.getElementById("age").value;
+      const current_study = document.getElementById("currentStudy").value;
+      const goal = document.getElementById("goal").value;
+      const skills = document.getElementById("skills").value;
+      const file = document.getElementById("documentFile").files[0];
+
+      const formData = new FormData();
+      formData.append("username", username);
+      formData.append("password", password);
+      formData.append("age", age);
+      formData.append("current_study", current_study);
+      formData.append("goal", goal);
+      formData.append("skills", skills);
+      if (file) formData.append("file", file);
+
+      const res = await fetch(`${API_BASE}/signup`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Signup successful! Please login.");
+        toggleForm('login'); // Switch to login form
+      } else {
+        alert(data.detail || "Signup failed");
+      }
+      
+    }
+  </script>
+</body>
+</html>
