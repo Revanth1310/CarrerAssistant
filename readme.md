@@ -21,7 +21,7 @@ An AI-powered career guidance system using FastAPI, LangChain, and Google's Gemi
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Revanth1310/CarrerAssistant.git
 cd CarrerAssistant
 ```
 
